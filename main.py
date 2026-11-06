@@ -21,27 +21,32 @@ st.markdown("---")
 
 @st.cache_data
 def carregar_dados():
-    df = pd.read_csv("tabela10065.csv", sep=";", skiprows=4)
+    df_65 = pd.read_csv("tabela10065.csv", sep=";", skiprows=4)
     sudeste_states = ['Minas Gerais', 'Espírito Santo', 'Rio de Janeiro', 'São Paulo']
-    df_sudeste = df[df.iloc[:, 0].isin(sudeste_states) & (df.iloc[:, 1] == "Total")].copy()
-    return df_sudeste
-
-df_ibge = carregar_dados()
-
-if not df_ibge.empty:
-    col_uf = df_ibge.columns[0]
-    col_total = df_ibge.columns[2]
-    df_ibge[col_total] = pd.to_numeric(df_ibge[col_total].str.replace('.', '', regex=False), errors='coerce')
+    df_sudeste_65 = df_65[df_65.iloc[:, 0].isin(sudeste_states) & (df_65.iloc[:, 1] == "Total")].copy()
+    df_64 = pd.read_csv("tabela10064.csv", sep=";", skiprows=4)
+    df_sudeste_64 = df_64[df_64.iloc[:, 0].isin(sudeste_states)].copy()
     
-    st.subheader("Panorama Geral do Ensino Superior no Sudeste")
-    cols = st.columns(len(df_ibge))
-    for idx, row in df_ibge.iterrows():
+    return df_sudeste_65, df_sudeste_64
+
+df_ibge_65, df_ibge_64 = carregar_dados()
+
+
+if not df_ibge_65.empty:
+    col_uf = df_ibge_65.columns[0]
+    col_total = df_ibge_65.columns[2]
+    df_ibge_65[col_total] = pd.to_numeric(df_ibge_65[col_total].str.replace('.', '', regex=False), errors='coerce')
+
+    st.subheader("Panorama Geral do Ensino Superior no Sudeste (Tabela 10065)")
+    cols = st.columns(len(df_ibge_65))
+    for idx, row in df_ibge_65.iterrows():
         uf_nome = row[col_uf]
         total_grad = row[col_total]
-        with cols[list(df_ibge.index).index(idx)]:
+        with cols[list(df_ibge_65.index).index(idx)]:
             st.metric(label=uf_nome, value=f"{total_grad:,.0f} pessoas".replace(',', '.'))
             
     st.markdown("---")
+
 
 
 st.subheader("Panorama Geral")
@@ -138,7 +143,7 @@ with col5:
 
 with col6:
     fig_horizontal = px.bar(
-    df_ibge,
+    df_ibge_65,
     x=col_total,
     y=col_uf,
     orientation='h',
