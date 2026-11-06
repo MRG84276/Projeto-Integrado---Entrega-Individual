@@ -55,115 +55,116 @@ if not df_ibge_65.empty:
             st.metric(label=uf_nome, value=f"{total_grad:,.0f} pessoas".replace(',', '.'))
             
     st.markdown("---")
+    
+if not df_totais_uf.empty:
+        total_geral_sudeste = df_totais_uf[col_total].sum()
+        media_sudeste = df_totais_uf[col_total].mean()
+        maior_uf = df_totais_uf.loc[df_totais_uf[col_total].idxmax()]
+        menor_uf = df_totais_uf.loc[df_totais_uf[col_total].idxmin()]
+
+        st.subheader("Indicadores Dinâmicos Regionais")
+        col1, col2, col33, col4 = st.columns(4)
+        
+        with col1:
+            st.metric(label="Média Regional (Sudeste)", value=f"{media_sudeste:,.0f} pes.".replace(',', '.'))
+        with col2:
+            st.metric(label=f"Maior Estado ({maior_uf[col_uf]})", value=f"{maior_uf[col_total]:,.0f}".replace(',', '.'))
+        with col3:
+            st.metric(label=f"Menor Estado ({menor_uf[col_uf]})", value=f"{menor_uf[col_total]:,.0f}".replace(',', '.'))
+        with col4:
+            st.metric(label="Total Acumulado Selecionado", value=f"{total_geral_sudeste:,.0f}".replace(',', '.'))
+
+    st.divider()
+
+    st.sidebar.markdown("---")
+    racas_disponiveis = df_65[col_raca].dropna().unique().tolist()
+    raca_selecionada = st.sidebar.selectbox("Filtrar Recorte de Raça/Cor:", options=["Todas"] + [r for r in racas_disponiveis if r != "Total"])
+
+    df_raca_filtrado = df_sudeste_65[df_sudeste_65[col_raca] != "Total"]
+    if raca_selecionada != "Todas":
+        df_raca_filtrado = df_raca_filtrado[df_raca_filtrado[col_raca] == raca_selecionada]
+
+    st.subheader("Recorte Demográfico por Raça/Cor (Tabela 10065)")
+    if not df_raca_filtrado.empty:
+        fig_raca = px.bar(
+            df_raca_filtrado,
+            x=col_uf,
+            y=col_total,
+            color=col_raca,
+            barmode="group",
+            title="Distribuição por Cor ou Raça nos Estados Selecionados",
+            labels={col_total: "População", col_uf: "Estado", col_raca: "Raça/Cor"}
+        )
+        st.plotly_chart(fig_raca, use_container_width=True)
+
+if not df_64.empty:
+    st.divider()
+    st.subheader("Perfil Etário do Ensino Superior (Tabela 10064)")
+    
+    col_uf_64 = df_64.columns[0]
+    col_idade = df_64.columns[1]
+    col_total_64 = df_64.columns[2]
+    
+    df_sudeste_64 = df_64[df_64[col_uf_64].isin(uf_selecionada)].copy()
+    df_sudeste_64[col_total_64] = pd.to_numeric(df_sudeste_64[col_total_64].astype(str).str.replace('.', '', regex=False), errors='coerce')
+
+    df_faixas = df_sudeste_64[df_sudeste_64[col_idade] != "Total"]
+    
+    if not df_faixas.empty:
+        fig_idade = px.bar(
+            df_faixas,
+            x=col_uf_64,
+            y=col_total_64,
+            color=col_idade,
+            barmode="group",
+            title="População com Superior Completo por Grupo de Idade",
+            labels={col_total_64: "Pessoas", col_uf_64: "Estado", col_idade: "Faixa Etária"}
+        )
+        st.plotly_chart(fig_idade, use_container_width=True)
+        
+    with st.expander("Ver Tabela Bruta de Dados Filtrados"):
+        st.dataframe(df_sudeste_64, use_container_width=True, hide_index=True)
 
 
+st.subheader("📐 Estatísticas Descritivas e Indicadores Avançados")
 
-st.subheader("Panorama Geral")
-col1, col2, col3, col4 = st.columns(4)
+# Substituição do np.random por dados reais extraídos de df_totais_uf (População com Superior por Estado filtrado)
+if not df_totais_uf.empty:
+    serie_valores = df_totais_uf[col_total]
+else:
+    serie_valores = pd.Series([0])
 
-with col1:
-    st.metric(label='Média Nacional', value='20,5%', delta="+13.7% desde 2000")
-with col2:
-    st.metric(label="Maior Unidade (DF)", value="37,0%")
-with col3:
-    st.metric(label="Maior Município (São Caetano do Sul)", value="48,2%")
-with col4:
-    st.metric(label="Menor Município (Belford Roxo)", value="5,7%")
-
-st.divider()
-
-st.subheader("Panorama Geográfico e Demográfico")
-
-dados_regioes = pd.DataFrame({
-    "Região": ["Centro-Oeste", "Sudeste", "Sul", "Norte", "Nordeste"],
-    "Percentual(%)": [21.8, 21.0, 20.2, 14.4, 13.0]
-}).sort_values(by="Percentual(%)", ascending=False)
-
-dados_genero = pd.DataFrame({
-    "Gênero": ["Mulheres", "Homens"],
-    "Percentual(%)": [20.7, 15.8]
-})
-
-dados_raca = pd.DataFrame({
-    "Raça/Cor": ["Brancos", "Pardos", "Pretos"],
-    "Percentual(%)": [25.8, 12.3, 11.7]
-})
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    fig_regiao = px.bar(
-        dados_regioes, x="Região", y="Percentual(%)", text="Percentual(%)",
-        color="Percentual(%)", color_continuous_scale="Blues",
-        title='Taxa de Graduados por Região', labels={"Percentual(%)": "População Graduada (%)"}
-    )
-    fig_regiao.update_traces(texttemplate='%{text}%', textposition='outside')
-    st.plotly_chart(fig_regiao, use_container_width=True)
-
-with col2:
-    fig_genero = px.bar(
-        dados_genero, x="Gênero", y="Percentual(%)", text="Percentual(%)",
-        color="Gênero", color_discrete_sequence=["#FF69B4", "#1E90FF"],
-        title='Recorte por Gênero', labels={"Percentual(%)": "População Graduada (%)"}
-    )
-    fig_genero.update_traces(texttemplate='%{text}%', textposition='outside')
-    st.plotly_chart(fig_genero, use_container_width=True)
-
-with col3:
-    fig_raca = px.pie(
-        dados_raca, values="Percentual(%)", names="Raça/Cor",
-        color_discrete_sequence=px.colors.sequential.YlOrBr_r, hole=0.4,
-        title='Recorte por Raça/Cor'
-    )
-    fig_raca.update_traces(textinfo='label+percent')
-    st.plotly_chart(fig_raca, use_container_width=True)
-
-st.divider()
-
-
-st.subheader("Estatísticas Descritivas e Indicadores Avançados")
-
-np.random.seed(42)
-taxas_municipios = np.concatenate([
-    np.random.normal(15, 4, 30),
-    np.random.normal(25, 6, 20),
-    np.random.normal(35, 8, 10)
-])
-taxas_municipios = np.clip(taxas_municipios, 5.0, 48.2)
-df_estatisticas = pd.DataFrame({'Taxa_Graduacao': taxas_municipios})
-
-media = df_estatisticas['Taxa_Graduacao'].mean()
-mediana = df_estatisticas['Taxa_Graduacao'].median()
-q1 = df_estatisticas['Taxa_Graduacao'].quantile(0.25)
-q3 = df_estatisticas['Taxa_Graduacao'].quantile(0.75)
+media = serie_valores.mean()
+mediana = serie_valores.median()
+q1 = serie_valores.quantile(0.25)
+q3 = serie_valores.quantile(0.75)
 iqr = q3 - q1
-desvio_padrao = df_estatisticas['Taxa_Graduacao'].std()
-variancia = df_estatisticas['Taxa_Graduacao'].var()
+desvio_padrao = serie_valores.std()
+variancia = serie_valores.var()
 
 col4, col5, col6 = st.columns(3)
 
 with col4:
-    fig_box = px.box(df_estatisticas, y='Taxa_Graduacao', title='Distribuição e Quartis (Boxplot)', labels={'Taxa_Graduacao': 'Taxa (%)'})
+    fig_box = px.box(df_totais_uf, y=col_total, title='Distribuição e Quartis (Boxplot)', labels={col_total: 'População Graduada'})
     st.plotly_chart(fig_box, use_container_width=True)
 
 with col5:
-    fig_hist = px.histogram(df_estatisticas, x='Taxa_Graduacao', nbins=10, title='Frequência das Taxas Municipais', labels={'Taxa_Graduacao': 'Taxa (%)'})
+    fig_hist = px.histogram(df_totais_uf, x=col_total, nbins=len(df_totais_uf), title='Frequência por Estado', labels={col_total: 'População Graduada'})
     st.plotly_chart(fig_hist, use_container_width=True)
 
 with col6:
     fig_horizontal = px.bar(
-    df_ibge_65,
-    x=col_total,
-    y=col_uf,
-    orientation='h',
-    text=col_total,
-    color=col_uf,
-    color_discrete_sequence=px.colors.sequential.Blues_r,
-    title="Total de Pessoas com Nível Superior Completo por Estado",
-    labels={col_total: "Pessoas Graduadas", col_uf: "Unidade da Federação"}
+        df_totais_uf,
+        x=col_total,
+        y=col_uf,
+        orientation='h',
+        text=col_total,
+        color=col_uf,
+        color_discrete_sequence=px.colors.sequential.Blues_r,
+        title="Total de Pessoas com Nível Superior Completo por Estado",
+        labels={col_total: "Pessoas Graduadas", col_uf: "Unidade da Federação"}
     )
     
-   
     fig_horizontal.update_traces(
         texttemplate='%{text:,.0f}', 
         textposition='outside'
@@ -178,30 +179,34 @@ with col6:
     st.plotly_chart(fig_horizontal, use_container_width=True)
 
 st.success(f"""
-**Análise dos Dados - Medidas de Tendência Central e Dispersão:**
-- **Tendência Central:** A **média** aritmética de **{media:.2f}%** e a **mediana** de **{mediana:.2f}%** demonstram uma leve assimetria na distribuição provocada por municípios polos muito desenvolvidos.
-- **Dispersão:** O **desvio padrão** de **{desvio_padrao:.2f}** evidencia uma variabilidade moderada/alta nas taxas de graduação pelo território nacional.
-- **Quartis e IQR:** O intervalo interquartil (**IQR = {iqr:.2f}%**) mostra que 50% dos municípios centrais estão concentrados nessa faixa de variação, isolando discrepâncias extremas.
+**Análise dos Dados Reais - Medidas de Tendência Central e Dispersão:**
+- **Tendência Central:** A **média** de **{media:,.0f}** pessoas e a **mediana** de **{mediana:,.0f}** refletem a realidade demográfica e o impacto concentrador dos estados selecionados.
+- **Dispersão:** O **desvio padrão** de **{desvio_padrao:,.0f}** evidencia a heterogeneidade e a disparidade populacional entre as unidades da federação.
+- **Quartis e IQR:** O intervalo interquartil (**IQR = {iqr:,.0f}**) delimita a faixa central de variação dos estados analisados.
 """)
 
 st.divider()
 
+st.subheader("📋 Tabela Completa de Indicadores (Extraída das Tabelas do Censo)")
 
-st.subheader("Tabela Completa de Indicadores")
 
-df_completo = pd.DataFrame([
-    {"Categoria": "Nacional", "Recorte": "Brasil", "Taxa (%)": 20.5},
-    {"Categoria": "Região", "Recorte": "Centro-Oeste", "Taxa (%)": 21.8},
-    {"Categoria": "Região", "Recorte": "Sudeste", "Taxa (%)": 21.0},
-    {"Categoria": "Região", "Recorte": "Sul", "Taxa (%)": 20.2},
-    {"Categoria": "Região", "Recorte": "Norte", "Taxa (%)": 14.4},
-    {"Categoria": "Região", "Recorte": "Nordeste", "Taxa (%)": 13.0},
-    {"Categoria": "Gênero", "Recorte": "Mulheres", "Taxa (%)": 20.7},
-    {"Categoria": "Gênero", "Recorte": "Homens", "Taxa (%)": 15.8},
-    {"Categoria": "Raça", "Recorte": "Brancos", "Taxa (%)": 25.8},
-    {"Categoria": "Raça", "Recorte": "Pardos", "Taxa (%)": 12.3},
-    {"Categoria": "Raça", "Recorte": "Pretos", "Taxa (%)": 11.7},
-])
+if not df_totais_uf.empty:
+    df_estados_tabela = df_totais_uf[[col_uf, col_total]].copy()
+    df_estados_tabela.columns = ["Recorte", "Total Absoluto"]
+    df_estados_tabela.insert(0, "Categoria", "Unidade da Federação")
+    
+    
+    if 'dados_raca' in locals() and not dados_raca.empty:
+        df_raca_tabela = dados_raca.copy()
+        df_raca_tabela.columns = ["Recorte", "Percentual(%)"]
+        df_raca_tabela.insert(0, "Categoria", "Raça/Cor")
+        
+        
+        df_completo = pd.concat([df_estados_tabela, df_raca_tabela], ignore_index=True, sort=False)
+    else:
+        df_completo = df_estados_tabela
+else:
+    df_completo = pd.DataFrame(columns=["Categoria", "Recorte", "Total Absoluto"])
 
 categoria_selecionada = st.selectbox("Filtrar tabela por categoria:", ["Todas"] + list(df_completo["Categoria"].unique()))
 
