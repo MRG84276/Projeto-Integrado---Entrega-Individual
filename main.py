@@ -31,6 +31,15 @@ def carregar_dados():
 
 df_ibge_65, df_ibge_64 = carregar_dados()
 
+st.sidebar.header("Filtros do Dashboard")
+
+sudeste_states = ['Minas Gerais', 'Espírito Santo', 'Rio de Janeiro', 'São Paulo']
+
+uf_selecionada = st.sidebar.multiselect(
+    "Selecione os Estados (Sudeste):",
+    options=sudeste_states,
+    default=sudeste_states
+)
 
 if not df_ibge_65.empty:
     col_uf = df_ibge_65.columns[0]
