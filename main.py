@@ -22,113 +22,88 @@ st.markdown("---")
 @st.cache_data
 def carregar_dados():
     df_65 = pd.read_csv("tabela10065.csv", sep=";", skiprows=4)
-    sudeste_states = ['Minas Gerais', 'Espírito Santo', 'Rio de Janeiro', 'São Paulo']
-    df_sudeste_65 = df_65[df_65.iloc[:, 0].isin(sudeste_states) & (df_65.iloc[:, 1] == "Total")].copy()
     df_64 = pd.read_csv("tabela10064.csv", sep=";", skiprows=4)
-    df_sudeste_64 = df_64[df_64.iloc[:, 0].isin(sudeste_states)].copy()
-    
-    return df_sudeste_65, df_sudeste_64
 
-df_ibge_65, df_ibge_64 = carregar_dados()
+    sudeste = ['Minas Gerais', 'Espírito Santo', 'Rio de Janeiro', 'São Paulo']
+   
+    col_total_65 = df_65.columns[2]
+    # Conversão rigorosa para numérico (substituindo pontos de milhar e tratando valores inválidos)
+    df_65[col_total_65] = pd.to_numeric(
+        df_65[col_total_65].astype(str).str.replace('.', '', regex=False).str.strip(), 
+        errors='coerce'
+    )
+    
+    col_total_64 = df_64.columns[2]
+    df_64[col_total_64] = pd.to_numeric(
+        df_64[col_total_64].astype(str).str.replace('.', '', regex=False).str.strip(), 
+        errors='coerce'
+    )
+    
+    return df_65[df_65.iloc[:, 0].isin(sudeste)], df_64[df_64.iloc[:, 0].isin(sudeste)]
+
+df_65, df_64 = carregar_dados()
 
 st.sidebar.header("Filtros do Dashboard")
+estados = ['Minas Gerais', 'Espírito Santo', 'Rio de Janeiro', 'São Paulo']
+uf_sel = st.sidebar.multiselect("Selecione os Estados:", options=estados, default=estados)
 
-sudeste_states = ['Minas Gerais', 'Espírito Santo', 'Rio de Janeiro', 'São Paulo']
+col_uf, col_raca, col_total = df_65.columns[0], df_65.columns[1], df_65.columns[2]
 
-uf_selecionada = st.sidebar.multiselect(
-    "Selecione os Estados (Sudeste):",
-    options=sudeste_states,
-    default=sudeste_states
-)
 
-if not df_ibge_65.empty:
-    col_uf = df_ibge_65.columns[0]
-    col_total = df_ibge_65.columns[2]
-    df_ibge_65[col_total] = pd.to_numeric(df_ibge_65[col_total].str.replace('.', '', regex=False), errors='coerce')
+df_65_filt = df_65[df_65[col_uf].isin(uf_sel)]
+df_totais = df_65_filt[df_65_filt[col_raca] == "Total"]
 
-    st.subheader("Panorama Geral do Ensino Superior no Sudeste (Tabela 10065)")
-    cols = st.columns(len(df_ibge_65))
-    for idx, row in df_ibge_65.iterrows():
-        uf_nome = row[col_uf]
-        total_grad = row[col_total]
-        with cols[list(df_ibge_65.index).index(idx)]:
-            st.metric(label=uf_nome, value=f"{total_grad:,.0f} pessoas".replace(',', '.'))
-            
-    st.markdown("---")
+st.subheader("Panorama Geral do Ensino Superior no Sudeste ")
+if not df_totais.empty:
+    cols = st.columns(len(df_totais))
+    for i, (_, row) in enumerate(df_totais.iterrows()):
+        cols[i].metric(label=row[col_uf], value=f"{row[col_total]:,.0f} pessoas".replace(',', '.'))
+
+st.markdown("---")
     
-if not df_totais_uf.empty:
-        total_geral_sudeste = df_totais_uf[col_total].sum()
-        media_sudeste = df_totais_uf[col_total].mean()
-        maior_uf = df_totais_uf.loc[df_totais_uf[col_total].idxmax()]
-        menor_uf = df_totais_uf.loc[df_totais_uf[col_total].idxmin()]
+if not df_totais.empty:
+    tot, med = df_totais[col_total].sum(), df_totais[col_total].mean()
+    maior, menor = df_totais.loc[df_totais[col_total].idxmax()], df_totais.loc[df_totais[col_total].idxmin()]
 
-        st.subheader("Indicadores Dinâmicos Regionais")
-        col1, col2, col33, col4 = st.columns(4)
-        
-        with col1:
-            st.metric(label="Média Regional (Sudeste)", value=f"{media_sudeste:,.0f} pes.".replace(',', '.'))
-        with col2:
-            st.metric(label=f"Maior Estado ({maior_uf[col_uf]})", value=f"{maior_uf[col_total]:,.0f}".replace(',', '.'))
-        with col3:
-            st.metric(label=f"Menor Estado ({menor_uf[col_uf]})", value=f"{menor_uf[col_total]:,.0f}".replace(',', '.'))
-        with col4:
-            st.metric(label="Total Acumulado Selecionado", value=f"{total_geral_sudeste:,.0f}".replace(',', '.'))
+    st.subheader("Indicadores Dinâmicos Regionais")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric(label="Média Regional (Sudeste)", value=f"{med:,.0f} pes.".replace(',', '.'))
+    with col2:
+        st.metric(label=f"Maior Estado ({maior[col_uf]})", value=f"{maior[col_total]:,.0f}".replace(',', '.'))
+    with col3:
+        st.metric(label=f"Menor Estado ({menor[col_uf]})", value=f"{menor[col_total]:,.0f}".replace(',', '.'))
+    with col4:
+        st.metric(label="Total Acumulado Selecionado", value=f"{tot:,.0f}".replace(',', '.'))
 
-    st.divider()
+st.divider()
 
-    st.sidebar.markdown("---")
-    racas_disponiveis = df_65[col_raca].dropna().unique().tolist()
-    raca_selecionada = st.sidebar.selectbox("Filtrar Recorte de Raça/Cor:", options=["Todas"] + [r for r in racas_disponiveis if r != "Total"])
+st.sidebar.markdown("---")
+racas = [r for r in df_65[col_raca].dropna().unique() if r != "Total"]
+raca_sel = st.sidebar.selectbox("Filtrar Raça/Cor:", options=["Todas"] + racas)
 
-    df_raca_filtrado = df_sudeste_65[df_sudeste_65[col_raca] != "Total"]
-    if raca_selecionada != "Todas":
-        df_raca_filtrado = df_raca_filtrado[df_raca_filtrado[col_raca] == raca_selecionada]
+df_raca = df_65_filt[(df_65_filt[col_raca] != "Total") & (df_65_filt[col_raca] == raca_sel if raca_sel != "Todas" else True)]
 
-    st.subheader("Recorte Demográfico por Raça/Cor (Tabela 10065)")
-    if not df_raca_filtrado.empty:
-        fig_raca = px.bar(
-            df_raca_filtrado,
-            x=col_uf,
-            y=col_total,
-            color=col_raca,
-            barmode="group",
-            title="Distribuição por Cor ou Raça nos Estados Selecionados",
-            labels={col_total: "População", col_uf: "Estado", col_raca: "Raça/Cor"}
-        )
-        st.plotly_chart(fig_raca, use_container_width=True)
+st.subheader("Recorte Demográfico por Raça/Cor")
+if not df_raca.empty:
+    fig_raca = px.bar(df_raca, x=col_uf, y=col_total, color=col_raca, barmode="group", labels={col_total: "População", col_uf: "Estado"})
+    st.plotly_chart(fig_raca, use_container_width=True)
 
 if not df_64.empty:
     st.divider()
-    st.subheader("Perfil Etário do Ensino Superior (Tabela 10064)")
-    
-    col_uf_64 = df_64.columns[0]
-    col_idade = df_64.columns[1]
-    col_total_64 = df_64.columns[2]
-    
-    df_sudeste_64 = df_64[df_64[col_uf_64].isin(uf_selecionada)].copy()
-    df_sudeste_64[col_total_64] = pd.to_numeric(df_sudeste_64[col_total_64].astype(str).str.replace('.', '', regex=False), errors='coerce')
-
-    df_faixas = df_sudeste_64[df_sudeste_64[col_idade] != "Total"]
+    st.subheader("Perfil Etário (Tabela 10064)")
+    col_uf_64, col_idade, col_tot_64 = df_64.columns[0], df_64.columns[1], df_64.columns[2]
+    df_faixas = df_64[(df_64[col_uf_64].isin(uf_sel)) & (df_64[col_idade] != "Total")]
     
     if not df_faixas.empty:
-        fig_idade = px.bar(
-            df_faixas,
-            x=col_uf_64,
-            y=col_total_64,
-            color=col_idade,
-            barmode="group",
-            title="População com Superior Completo por Grupo de Idade",
-            labels={col_total_64: "Pessoas", col_uf_64: "Estado", col_idade: "Faixa Etária"}
-        )
+        fig_idade = px.bar(df_faixas, x=col_uf_64, y=col_tot_64, color=col_idade, barmode="group", labels={col_tot_64: "Pessoas", col_uf_64: "Estado"})
         st.plotly_chart(fig_idade, use_container_width=True)
-        
-    with st.expander("Ver Tabela Bruta de Dados Filtrados"):
-        st.dataframe(df_sudeste_64, use_container_width=True, hide_index=True)
 
 
-st.subheader("📐 Estatísticas Descritivas e Indicadores Avançados")
+st.subheader("Estatísticas Descritivas e Indicadores Avançados")
+df_totais_uf = df_65_filt[df_65_filt[col_raca] == "Total"]
 
-# Substituição do np.random por dados reais extraídos de df_totais_uf (População com Superior por Estado filtrado)
 if not df_totais_uf.empty:
     serie_valores = df_totais_uf[col_total]
 else:
@@ -143,13 +118,12 @@ desvio_padrao = serie_valores.std()
 variancia = serie_valores.var()
 
 col4, col5, col6 = st.columns(3)
-
 with col4:
     fig_box = px.box(df_totais_uf, y=col_total, title='Distribuição e Quartis (Boxplot)', labels={col_total: 'População Graduada'})
     st.plotly_chart(fig_box, use_container_width=True)
 
 with col5:
-    fig_hist = px.histogram(df_totais_uf, x=col_total, nbins=len(df_totais_uf), title='Frequência por Estado', labels={col_total: 'População Graduada'})
+    fig_hist = px.histogram(df_totais_uf, x=col_total, nbins=len(df_totais_uf) if len(df_totais_uf) > 0 else 1, title='Frequência por Estado', labels={col_total: 'População Graduada'})
     st.plotly_chart(fig_hist, use_container_width=True)
 
 with col6:
@@ -187,32 +161,8 @@ st.success(f"""
 
 st.divider()
 
-st.subheader("📋 Tabela Completa de Indicadores (Extraída das Tabelas do Censo)")
+st.subheader("Tabela Completa de Indicadores")
+df_tabela = df_totais[[col_uf, col_total]].rename(columns={col_uf: "Estado", col_total: "Total Graduados"})
+st.dataframe(df_tabela, use_container_width=True, hide_index=True)
 
 
-if not df_totais_uf.empty:
-    df_estados_tabela = df_totais_uf[[col_uf, col_total]].copy()
-    df_estados_tabela.columns = ["Recorte", "Total Absoluto"]
-    df_estados_tabela.insert(0, "Categoria", "Unidade da Federação")
-    
-    
-    if 'dados_raca' in locals() and not dados_raca.empty:
-        df_raca_tabela = dados_raca.copy()
-        df_raca_tabela.columns = ["Recorte", "Percentual(%)"]
-        df_raca_tabela.insert(0, "Categoria", "Raça/Cor")
-        
-        
-        df_completo = pd.concat([df_estados_tabela, df_raca_tabela], ignore_index=True, sort=False)
-    else:
-        df_completo = df_estados_tabela
-else:
-    df_completo = pd.DataFrame(columns=["Categoria", "Recorte", "Total Absoluto"])
-
-categoria_selecionada = st.selectbox("Filtrar tabela por categoria:", ["Todas"] + list(df_completo["Categoria"].unique()))
-
-if categoria_selecionada != "Todas":
-    df_filtrado = df_completo[df_completo["Categoria"] == categoria_selecionada]
-else:
-    df_filtrado = df_completo
-
-st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
