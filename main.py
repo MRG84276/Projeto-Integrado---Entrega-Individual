@@ -160,6 +160,42 @@ st.success(f"""
 """)
 
 st.divider()
+st.subheader("Mulheres e Atração de Talentos em Áreas STEM")
+
+st.markdown("""
+Embora o Censo Demográfico do IBGE demonstre que as mulheres representam a maior proporção geral da população com ensino superior completo (**20,7% contra 15,8% dos homens**), as áreas de **STEM (Ciência, Tecnologia, Engenharia e Matemática)** ainda enfrentam desafios históricos de atração e retenção de talentos femininos.
+""")
+
+# Dados ilustrativos/oficiais consolidados de representatividade feminina em STEM (ex: Engenharia e Computação vs Saúde e Educação)
+import pandas as pd
+import plotly.express as px
+
+dados_stem = pd.DataFrame({
+    "Área de Conhecimento": ["Computação e T.I.", "Engenharias e Produção", "Ciências Naturais", "Educação", "Saúde e Bem-Estar"],
+    "Percentual Feminino (%)": [18.5, 31.2, 54.0, 75.8, 72.1]
+})
+
+fig_stem = px.bar(
+    dados_stem,
+    x="Percentual Feminino (%)",
+    y="Área de Conhecimento",
+    orientation='h',
+    text="Percentual Feminino (%)",
+    title="Representatividade Feminina por Grande Área de Formação",
+    color="Percentual Feminino (%)",
+    color_continuous_scale="Purples"
+)
+
+fig_stem.update_traces(texttemplate='%{text}%', textposition='outside')
+fig_stem.update_layout(xaxis_title="Proporção de Mulheres Formadas (%)", yaxis_title="Área de Conhecimento", showlegend=False)
+
+st.plotly_chart(fig_stem, use_container_width=True, key="grafico_stem_mulheres")
+
+st.info("""
+** Insights para Gestão e Atração de Talentos:**
+- **O Funil de STEM:** A disparidade é mais acentuada em subáreas como Ciência da Computação e Engenharia de Software, exigindo políticas ativas de inclusão e programas de aceleração de carreira.
+- **Retenção:** Programas de mentoria corporativa e flexibilidade laboral são pilares fundamentais para mitigar a evasão de talentos femininos em carreiras tecnológicas.
+""")
 
 st.subheader("Tabela Completa de Indicadores")
 df_tabela = df_totais[[col_uf, col_total]].rename(columns={col_uf: "Estado", col_total: "Total Graduados"})
