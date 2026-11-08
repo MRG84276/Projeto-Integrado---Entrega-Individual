@@ -160,41 +160,48 @@ st.success(f"""
 """)
 
 st.divider()
+
 st.subheader("Mulheres e Atração de Talentos em Áreas STEM")
 
 st.markdown("""
-Embora o Censo Demográfico do IBGE demonstre que as mulheres representam a maior proporção geral da população com ensino superior completo (**20,7% contra 15,8% dos homens**), as áreas de **STEM (Ciência, Tecnologia, Engenharia e Matemática)** ainda enfrentam desafios históricos de atração e retenção de talentos femininos.
+Embora o Censo Demográfico do IBGE demonstre que a população com ensino superior completo apresenta um volume expressivo na Região Sudeste, a atração e retenção de talentos (especialmente em áreas de **STEM — Ciência, Tecnologia, Engenharia e Matemática**) exige análises demográficas regionais detalhadas para fundamentar políticas corporativas de inclusão e diversidade.
 """)
 
-# Dados ilustrativos/oficiais consolidados de representatividade feminina em STEM (ex: Engenharia e Computação vs Saúde e Educação)
-import pandas as pd
-import plotly.express as px
+df_raca_stem = df_65_filt[df_65_filt[col_raca] != "Total"].copy()
 
-dados_stem = pd.DataFrame({
-    "Área de Conhecimento": ["Computação e T.I.", "Engenharias e Produção", "Ciências Naturais", "Educação", "Saúde e Bem-Estar"],
-    "Percentual Feminino (%)": [18.5, 31.2, 54.0, 75.8, 72.1]
-})
+if not df_raca_stem.empty:
+    df_stem_real = df_raca_stem.groupby(col_uf, as_index=False)[col_total].sum()
+    total_regiao = df_stem_real[col_total].sum()
+    
+    df_stem_real["Percentual do Polo (%)"] = (df_stem_real[col_total] / total_regiao * 100).round(1)
+    df_stem_real = df_stem_real.sort_values(by="Percentual do Polo (%)", ascending=True)
 
-fig_stem = px.bar(
-    dados_stem,
-    x="Percentual Feminino (%)",
-    y="Área de Conhecimento",
-    orientation='h',
-    text="Percentual Feminino (%)",
-    title="Representatividade Feminina por Grande Área de Formação",
-    color="Percentual Feminino (%)",
-    color_continuous_scale="Purples"
-)
+    fig_stem = px.bar(
+        df_stem_real,
+        x="Percentual do Polo (%)",
+        y=col_uf,
+        orientation='h',
+        text="Percentual do Polo (%)",
+        title="Concentração Regional do Pool de Talentos Graduados (Dados Reais IBGE)",
+        color="Percentual do Polo (%)",
+        color_continuous_scale="Purples"
+    )
 
-fig_stem.update_traces(texttemplate='%{text}%', textposition='outside')
-fig_stem.update_layout(xaxis_title="Proporção de Mulheres Formadas (%)", yaxis_title="Área de Conhecimento", showlegend=False)
+    fig_stem.update_traces(texttemplate='%{text}%', textposition='outside')
+    fig_stem.update_layout(
+        xaxis_title="Proporção de Talentos na Região (%)", 
+        yaxis_title="Unidade da Federação", 
+        showlegend=False
+    )
 
-st.plotly_chart(fig_stem, use_container_width=True, key="grafico_stem_mulheres")
+    st.plotly_chart(fig_stem, use_container_width=True, key="grafico_stem_mulheres_real")
+else:
+    st.warning("Não foi possível carregar os dados reais para o gráfico de STEM.")
 
 st.info("""
 ** Insights para Gestão e Atração de Talentos:**
-- **O Funil de STEM:** A disparidade é mais acentuada em subáreas como Ciência da Computação e Engenharia de Software, exigindo políticas ativas de inclusão e programas de aceleração de carreira.
-- **Retenção:** Programas de mentoria corporativa e flexibilidade laboral são pilares fundamentais para mitigar a evasão de talentos femininos em carreiras tecnológicas.
+- **O Funil de STEM & Distribuição Regional:** A alta concentração de graduados em determinados polos (ex: SP e MG) exige que empresas de tecnologia descentralizem seus programas de atração de talentos e acelerem a inclusão de grupos minoritários.
+- **Retenção & Diversidade:** Programas de mentoria corporativa, trabalho flexível e ações afirmativas de recrutamento são pilares fundamentais para mitigar disparidades de gênero e raça nas carreiras tecnológicas.
 """)
 
 st.subheader("Tabela Completa de Indicadores")
