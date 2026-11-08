@@ -15,7 +15,7 @@ st.title("Curso Superior")
 st.markdown("---")
 st.title("Dashboard de Visualização de Dados")
 st.markdown("Análise visual das métricas acadêmicas e operacionais.")
-st.markdown("Fonte: **SIDRA - Censo Demográfico 2022 — IBGE (Tabelas 10064 e 10065)**")
+st.markdown("Fonte: **SIDRA - Censo Demográfico 2022 — IBGE **")
 st.markdown("---")
 
 
@@ -92,7 +92,7 @@ if not df_raca.empty:
 
 if not df_64.empty:
     st.divider()
-    st.subheader("Perfil Etário (Tabela 10064)")
+    st.subheader("Perfil Etário")
     col_uf_64, col_idade, col_tot_64 = df_64.columns[0], df_64.columns[1], df_64.columns[2]
     df_faixas = df_64[(df_64[col_uf_64].isin(uf_sel)) & (df_64[col_idade] != "Total")]
     
@@ -120,11 +120,11 @@ variancia = serie_valores.var()
 col4, col5, col6 = st.columns(3)
 with col4:
     fig_box = px.box(df_totais_uf, y=col_total, title='Distribuição e Quartis (Boxplot)', labels={col_total: 'População Graduada'})
-    st.plotly_chart(fig_box, use_container_width=True)
+    st.plotly_chart(fig_box, use_container_width=True, key="estat_box")
 
 with col5:
     fig_hist = px.histogram(df_totais_uf, x=col_total, nbins=len(df_totais_uf) if len(df_totais_uf) > 0 else 1, title='Frequência por Estado', labels={col_total: 'População Graduada'})
-    st.plotly_chart(fig_hist, use_container_width=True)
+    st.plotly_chart(fig_hist, use_container_width=True, key="estat_hist")
 
 with col6:
     fig_horizontal = px.bar(
@@ -164,5 +164,7 @@ st.divider()
 st.subheader("Tabela Completa de Indicadores")
 df_tabela = df_totais[[col_uf, col_total]].rename(columns={col_uf: "Estado", col_total: "Total Graduados"})
 st.dataframe(df_tabela, use_container_width=True, hide_index=True)
+
+
 
 
